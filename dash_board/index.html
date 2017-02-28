@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="cn">
+    <head>
+		<meta charset="UTF-8" />
+        <title>Dash Board</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+        <script type="text/javascript" src="js/jquery-1.11.3.min.js"></script>
+        <script type="text/javascript" src="js/emblem.js"></script>
+        <style type="text/css">
+            html,
+            body {
+                margin: 0;
+                overflow: hidden;
+                background: grey;
+                font-family: "宋体";
+            }
+            #content {
+                position:absolute;
+                left: 0;
+                top: 0;
+                width: 360px;
+                height: 170px;
+                background-image: url("pic.png");
+                background-repeat: no-repeat;
+                background-size: 100%;
+                /*overflow: hidden;*/
+            }
+            .emblem {
+                position: relative;
+                left: 55px;
+                top: 50px;
+                /*margin: 0 auto;*/
+                width: 250px;
+                height: 250px;
+                border-radius: 50%;
+                font-weight: bold;
+                color: white;
+                animation: spinZ 20s linear infinite;
+                text-align: center;
+            }
+            .emblem span {
+                position: absolute;
+                display: inline-block;
+                left: 0;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                text-transform: uppercase;
+                font-size: 3vh;
+                /*transition: all 0.5s cubic-bezier(0, 0, 0, 1);*/
+            }
+        </style>
+    </head>
+    <body>
+        <span id="testText"></span>
+        <div id="content">
+        <div class="emblem"></div>
+        </div>
+        <script type="text/javascript">
+        var texts = ["奔驰", "大众", "奥迪", "凯迪拉克", "宝马",
+            "奔驰1", "大众1", "奥迪1", "凯迪拉克1", "宝马1",
+            "奔驰2", "大众2", "奥迪2", "凯迪拉克2", "宝马2"
+        ]; // 在这里添加品牌。
+
+        // 初始化，使添加的品牌字样成弧形。
+        var text = "";
+        var spaceLetter = "_";
+        for (var i = 0; i < texts.length; i++) {
+            text = text + texts[i] + spaceLetter + spaceLetter;
+        }
+        var lastIndex = text.length;
+        document.getElementsByClassName("emblem")[0].innerHTML = text;
+        Emblem.init('.emblem');
+
+        /*
+         * 获取 变色（选中）的元素
+         */
+        function getChosenElement() {
+            var element = "";
+            var pas = document.getElementsByClassName("parentChar");
+            for (var p = 0; p < pas.length; p++) {
+                var chs = pas[p].children;
+                for (var c = 0; c < chs.length; c++)
+                    if (chs[c].style.color == "yellow")
+                        element = element+chs[c].innerHTML;
+
+            }
+            if (element == "") {
+                return null;
+            }
+            return element;
+        }
+
+        /*
+         * 获取 变色（选中）的第一个结点
+         */
+        function getChosenElementNode() {
+            var pas = document.getElementsByClassName("parentChar");
+            for (var p = 0; p < pas.length; p++) {
+                var chs = pas[p].children;
+                for (var c = 0; c < chs.length; c++)
+                    if (chs[c].style.color == "yellow")
+                        return  chs[c];
+
+            }
+            return null;
+        }
+        /*
+         * 获取 元素 现在的旋转角度
+         */
+        function getElementDeg(element) {
+            var tmp = element.style.transform;
+            var re = new RegExp("\\(.*?deg\\)");
+            var tmpR = tmp.match(re)[0];
+            return parseInt(tmpR.substr(1));
+        }
+
+        /*
+         * 监听 触摸／鼠标 的触碰事件
+         * 拖拽的时候，改变所有 品牌 的旋转角度。
+         */
+        var isDown = false;
+        var lastPos = {x:0, y:0};
+
+        var maxLength = 40;
+        var perDeg = (360/maxLength);
+        var minDeg = perDeg*-3+280;
+        var maxDeg = perDeg*(maxLength/2)+280;
+        function mousemove(e) {
+            if (!isDown) {
+                return;
+            }
+            var isRight = (e.screenX - lastPos.x) > 0;
+            if (e.screenX > 210 && !isRight && (e.screenY - lastPos.y) > 0) {
+                isRight = true;
+            }
+            lastPos.x = e.screenX;
+            lastPos.y = e.screenY;
+
+            var colorChar = null;
+            var lastColorChar = getChosenElementNode();
+            var degs = [];
+            var minIndex = 0;
+            for (var f = 0; f < text.length; f++) {
+                var char_f = document.getElementById("char" + f);
+                if (getElementDeg(char_f) > minDeg) {
+                    minIndex = f;
+                    break
+                }
+            }
+            for (var i = 0; i < text.length; i++) {
+                var char = document.getElementById("char" + i);
+                var de;
+                if (isRight) {
+                    if (i >= minIndex) {
+                        de = getElementDeg(char);
+                        de = de + 3
+                    } else {
+                        de = minDeg;
+                        if (i == minIndex-1) {
+                            de = de + 3;
+                        }
+                    }
+                } else {
+                    if (i == minIndex) {
+                        de = getElementDeg(char);
+                        de = de - 3;
+                    } else {
+                        if (i > minIndex) {
+                            de = degs[i - 1] + perDeg;
+                            if (degs[i-1] == minDeg) {
+                                minIndex = i;
+                            }
+                        } else {
+                            de = minDeg;
+                        }
+                    }
+                }
+                de = Math.min(maxDeg, de);
+                de = Math.max(minDeg, de);
+
+//                if (text.length < maxLength) {
+                    if (i == 0 && (char.style.display == "block" || char.style.display == "") && isRight && Math.abs(de % 360) < 20) {
+                        degs = [];
+                        break;
+                    }
+                    if (i == text.length - 1  && (char.style.display == "block" || char.style.display == "") && !isRight && Math.abs(de % 360) > 350) {
+                        degs = [];
+                        break;
+                    }
+//                }
+                degs[i] = de;
+            }
+
+            if (degs.length == 0) return;
+            for (var d = 0; d < degs.length; d++) {
+                var deg = degs[d];
+                var $char = $("#char" + d);
+
+                // 改变元素旋转角度
+                $char.css("transform", 'rotateZ(' + deg + 'deg)');
+
+                var colorDeg = Math.abs(deg % 360);
+                // 当元素处于中间的时候（旋转角度接近0度），改变元素颜色为黄色
+                if (colorDeg >= 350 || colorDeg <= 10) {
+                    $char.css("color", "yellow");
+                    if (text[d] != spaceLetter) {
+                        colorChar = $char;
+                    }
+                } else {
+                    $char.css("color", "white");
+                }
+            }
+
+            colorChar = colorChar || $(lastColorChar);
+            if (colorChar) {
+                var sibs = colorChar.siblings();
+                colorChar.css("color", "yellow");
+                for (var s = 0; s < sibs.length; s++) {
+                    sibs[s].style.color = "yellow";
+                }
+            }
+        }
+        document.getElementById("testText").innerHTML = getChosenElement() || "";
+        $("html").bind({ // 事件绑定
+            'touchstart mousedown' : function(e){
+                isDown = true;
+                if (e.type == "touchstart") {
+                    e = e.originalEvent.touches[0];
+                }
+                lastPos.x = e.screenX;
+                lastPos.y = e.screenY;
+            },
+            'touchmove mousemove' : function(e){
+                if (e.type == "touchmove") {
+                    e = e.originalEvent.touches[0];
+                }
+                mousemove(e);
+            },
+            'touchend touchcancel mouseup' : function(){
+                isDown = false;
+                lastPos = {x:0, y:0};
+                document.getElementById("testText").innerHTML = getChosenElement() || "";
+            }
+        });
+    </script>
+    </body>
+</html>
